@@ -16,6 +16,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Button } from '../components/ui/Button';
+import { ReportModal } from '../components/ReportModal';
 import { toast } from 'react-hot-toast';
 
 export default function HomePage() {
@@ -23,6 +24,7 @@ export default function HomePage() {
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
+  const [reportTarget, setReportTarget] = useState<{ id: string, type: 'post' | 'profile' } | null>(null);
 
   useEffect(() => {
     fetchUser();
@@ -150,7 +152,10 @@ export default function HomePage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <button className="text-xs text-blue-400 font-bold hover:underline">Follow</button>
-                  <AlertCircle className="w-5 h-5 text-red-500/50 hover:text-red-500 cursor-pointer" />
+                  <AlertCircle 
+                    className="w-5 h-5 text-red-500/50 hover:text-red-500 cursor-pointer" 
+                    onClick={() => setReportTarget({ id: post.id, type: 'post' })}
+                  />
                 </div>
               </div>
 
@@ -203,6 +208,13 @@ export default function HomePage() {
         <Clock className="w-6 h-6 text-gray-400" />
         <User className="w-6 h-6 text-gray-400" />
       </nav>
+
+      <ReportModal 
+        isOpen={!!reportTarget} 
+        onClose={() => setReportTarget(null)}
+        targetId={reportTarget?.id || ''}
+        targetType={reportTarget?.type || 'post'}
+      />
     </div>
   );
 }

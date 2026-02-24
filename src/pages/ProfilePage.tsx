@@ -11,10 +11,12 @@ import {
   PlusCircle,
   Heart,
   MessageCircle,
-  LogOut
+  LogOut,
+  AlertCircle
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Button } from '../components/ui/Button';
+import { ReportModal } from '../components/ReportModal';
 import { toast } from 'react-hot-toast';
 
 export default function ProfilePage() {
@@ -24,6 +26,7 @@ export default function ProfilePage() {
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isOwnProfile, setIsOwnProfile] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
   useEffect(() => {
     fetchProfile();
@@ -79,6 +82,14 @@ export default function ProfilePage() {
           </button>
         </div>
         <div className="absolute top-6 right-6 flex gap-4">
+          {!isOwnProfile && (
+            <button 
+              onClick={() => setIsReportModalOpen(true)}
+              className="p-3 glass rounded-full hover:bg-red-500/20 text-red-400 transition-all"
+            >
+              <AlertCircle className="w-6 h-6" />
+            </button>
+          )}
           <button className="p-3 glass rounded-full hover:bg-white/10 transition-all">
             <Settings className="w-6 h-6" />
           </button>
@@ -187,6 +198,13 @@ export default function ProfilePage() {
           </div>
         )}
       </div>
+
+      <ReportModal 
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        targetId={profile?.id || ''}
+        targetType="profile"
+      />
     </div>
   );
 }

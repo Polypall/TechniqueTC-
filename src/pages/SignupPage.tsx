@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Eye, EyeOff, Mail, Lock, User, School, FileText, Check } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, School, FileText, Check, Paperclip, Camera } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { uploadAvatar, uploadResume } from '../lib/storage';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { toast } from 'react-hot-toast';
@@ -34,10 +35,21 @@ export default function SignupPage() {
     roleType: 'inventor',
     school: '',
     specialties: [] as string[],
-    agreedToTerms: false
+    agreedToTerms: false,
+    avatarFile: null as File | null,
+    resumeFile: null as File | null
   });
 
   const [showPassword, setShowPassword] = useState(false);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'avatar' | 'resume') => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (type === 'avatar') setFormData({ ...formData, avatarFile: file });
+      else setFormData({ ...formData, resumeFile: file });
+      toast.success(`${type === 'avatar' ? 'Profile picture' : 'Resume'} selected`);
+    }
+  };
 
   const handleToggleSpecialty = (specialty: string) => {
     setFormData(prev => ({
@@ -76,6 +88,16 @@ export default function SignupPage() {
       if (authError) throw authError;
 
       if (authData.user) {
+        let avatarUrl = '';
+        let resumeUrl = '';
+
+        if (formData.avatarFile) {
+          avatarUrl = await uploadAvatar(authData.user.id, formData.avatarFile);
+        }
+        if (formData.resumeFile) {
+          resumeUrl = await uploadResume(authData.user.id, formData.resumeFile);
+        }
+
         // 2. Create Profile
         const { error: profileError } = await supabase.from('profiles').insert({
           id: authData.user.id,
@@ -85,6 +107,8 @@ export default function SignupPage() {
           role_type: formData.roleType,
           college: formData.school,
           professions: formData.specialties,
+          avatar_url: avatarUrl,
+          resume_url: resumeUrl,
           is_active: true
         });
 
@@ -203,6 +227,48 @@ export default function SignupPage() {
                 icon={<School className="w-5 h-5" />}
               />
 
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 glass rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center overflow-hidden border border-blue-500/30">
+                      {formData.avatarFile ? (
+                        <img src={URL.createObjectURL(formData.avatarFile)} className="w-full h-full object-cover" />
+                      ) : (
+                        <Camera className="w-6 h-6 text-blue-400" />
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-white">Profile Picture</p>
+                      <p className="text-[10px] text-gray-500 uppercase">JPG, PNG supported</p>
+                    </div>
+                  </div>
+                  <label className="cursor-pointer">
+                    <input type="file" className="hidden" accept="image/*" onChange={e => handleFileChange(e, 'avatar')} />
+                    <Button variant="outline" size="sm" type="button" className="pointer-events-none">
+                      {formData.avatarFile ? 'Change' : 'Add'}
+                    </Button>
+                  </label>
+                </div>
+
+                <div className="flex items-center justify-between p-4 glass rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center border border-blue-500/30">
+                      <FileText className="w-6 h-6 text-blue-400" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-white">Resume PDF</p>
+                      <p className="text-[10px] text-gray-500 uppercase">PDF only</p>
+                    </div>
+                  </div>
+                  <label className="cursor-pointer">
+                    <input type="file" className="hidden" accept=".pdf" onChange={e => handleFileChange(e, 'resume')} />
+                    <Button variant="outline" size="sm" type="button" className="pointer-events-none">
+                      {formData.resumeFile ? 'Change' : 'Add'}
+                    </Button>
+                  </label>
+                </div>
+              </div>
+
               <div className="flex gap-4">
                 <Button variant="ghost" className="flex-1" onClick={() => setStep(1)}>Back</Button>
                 <Button className="flex-1" onClick={() => setStep(3)}>Next</Button>
@@ -247,6 +313,7 @@ export default function SignupPage() {
                   Polypall is not liable for any interactions, communications, or consequences arising from your use of this service.
                   Bullying, harassment, or any form of abusive behavior is strictly prohibited. Sexually explicit content is not permitted.
                   Polypall is not responsible for any events, outcomes, or risks associated with in-person meetings.
+                  <Link to="/terms" className="text-blue-400 hover:underline ml-1">Read full Terms of Service</Link>
                 </div>
                 <label className="flex items-center gap-3 cursor-pointer group">
                   <input 

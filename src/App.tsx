@@ -20,10 +20,14 @@ import MatchHistoryPage from './pages/MatchHistoryPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
+import TermsPage from './pages/TermsPage';
+import { useRealtimeNotifications } from './hooks/useRealtimeNotifications';
 
 export default function App() {
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+
+  useRealtimeNotifications(session?.user?.id);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -56,6 +60,7 @@ export default function App() {
         <Route path="/verify-email" element={<VerifyEmailPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/terms" element={<TermsPage />} />
         
         {/* Protected Routes */}
         <Route path="/home" element={session ? <HomePage /> : <Navigate to="/login" />} />
