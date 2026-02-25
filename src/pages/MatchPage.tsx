@@ -19,6 +19,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Button } from '../components/ui/Button';
 import { toast } from 'react-hot-toast';
+import { GoogleGenAI } from "@google/genai";
 
 export default function MatchPage() {
   const navigate = useNavigate();
@@ -28,22 +29,79 @@ export default function MatchPage() {
   const [loading, setLoading] = useState(true);
   const [isCalling, setIsCalling] = useState(false);
   const [countdown, setCountdown] = useState(20);
+  const [aiResponse, setAiResponse] = useState<string>('Analyzing compatibility...');
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
   useEffect(() => {
+    fetchCurrentUser();
     fetchMatches();
   }, [activeFilter]);
+
+  const fetchCurrentUser = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+      setCurrentUser(profile);
+    }
+  };
 
   useEffect(() => {
     let timer: any;
     if (isCalling && countdown > 0) {
       timer = setInterval(() => setCountdown(c => c - 1), 1000);
+      if (countdown === 19) {
+        generateAiMatch();
+      }
     } else if (countdown === 0) {
       setIsCalling(false);
       setCountdown(20);
+      setAiResponse('Analyzing compatibility...');
       toast.success('Call ended');
     }
     return () => clearInterval(timer);
   }, [isCalling, countdown]);
+
+  const generateAiMatch = async () => {
+    if (!currentMatch || !currentUser) return;
+
+    try {
+      // Safe access to process.env for Vite environment
+      const apiKey = typeof process !== 'undefined' ? process.env.GEMINI_API_KEY : null;
+      if (!apiKey) {
+        setAiResponse("Technical synergy detected. Proceed with collaboration!");
+        return;
+      }
+
+      const ai = new GoogleGenAI({ apiKey });
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: `Analyze the compatibility between these two users for a tech collaboration platform called TECHNIQUE.
+        
+        User 1 (Current User):
+        Name: ${currentUser.full_name}
+        Role: ${currentUser.role_type}
+        Specialties: ${currentUser.professions?.join(', ')}
+        Bio: ${currentUser.bio}
+        
+        User 2 (Potential Match):
+        Name: ${currentMatch.full_name}
+        Role: ${currentMatch.role_type}
+        Specialties: ${currentMatch.professions?.join(', ')}
+        Bio: ${currentMatch.bio}
+        
+        Provide a brief (2-3 sentences), highly enthusiastic "Live A.I Match" analysis explaining why they should work together. Focus on technical synergy.`,
+      });
+
+      setAiResponse(response.text || "Connection established. Start your collaboration!");
+    } catch (error) {
+      console.error('AI Error:', error);
+      setAiResponse("Technical synergy detected. Proceed with collaboration!");
+    }
+  };
 
   const fetchMatches = async () => {
     setLoading(true);
@@ -198,9 +256,16 @@ export default function MatchPage() {
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center p-8"
           >
-            <div className="absolute top-12 text-center">
+            <div className="absolute top-12 text-center px-6">
               <h2 className="text-2xl font-bold text-white mb-2">Live A.I Match</h2>
-              <div className="text-5xl font-mono text-blue-500">{countdown}s</div>
+              <div className="text-5xl font-mono text-blue-500 mb-4">{countdown}s</div>
+              <motion.p 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-sm text-blue-200/80 italic max-w-sm mx-auto"
+              >
+                "{aiResponse}"
+              </motion.p>
             </div>
 
             <div className="w-full max-w-md aspect-video glass-blue rounded-3xl overflow-hidden relative">

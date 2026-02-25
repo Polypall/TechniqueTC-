@@ -13,10 +13,11 @@ import {
   AlertCircle,
   Wrench
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Button } from '../components/ui/Button';
 import { ReportModal } from '../components/ReportModal';
+import { CreatePostModal } from '../components/CreatePostModal';
 import { toast } from 'react-hot-toast';
 
 export default function HomePage() {
@@ -25,6 +26,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [reportTarget, setReportTarget] = useState<{ id: string, type: 'post' | 'profile' } | null>(null);
+  const [isCreatePostOpen, setIsCreatePostOpen] = useState(false);
 
   useEffect(() => {
     fetchUser();
@@ -111,10 +113,16 @@ export default function HomePage() {
               <User className="w-full h-full p-2 text-blue-400" />
             )}
           </div>
-          <button className="flex-1 text-left px-4 py-2 rounded-full bg-white/5 text-gray-400 hover:bg-white/10 transition-all">
+          <button 
+            onClick={() => setIsCreatePostOpen(true)}
+            className="flex-1 text-left px-4 py-2 rounded-full bg-white/5 text-gray-400 hover:bg-white/10 transition-all"
+          >
             Share your latest invention...
           </button>
-          <PlusCircle className="w-8 h-8 text-blue-500 cursor-pointer hover:scale-110 transition-transform" />
+          <PlusCircle 
+            onClick={() => setIsCreatePostOpen(true)}
+            className="w-8 h-8 text-blue-500 cursor-pointer hover:scale-110 transition-transform" 
+          />
         </div>
 
         {/* Feed */}
@@ -204,10 +212,23 @@ export default function HomePage() {
       <nav className="fixed bottom-0 left-0 right-0 glass-blue border-t border-white/10 px-6 py-3 flex justify-between items-center sm:hidden">
         <Home className="w-6 h-6 text-blue-500" />
         <Search className="w-6 h-6 text-gray-400" />
-        <PlusCircle className="w-8 h-8 text-blue-500" />
-        <Clock className="w-6 h-6 text-gray-400" />
-        <User className="w-6 h-6 text-gray-400" />
+        <PlusCircle onClick={() => setIsCreatePostOpen(true)} className="w-8 h-8 text-blue-500" />
+        <Clock onClick={() => navigate('/history')} className="w-6 h-6 text-gray-400" />
+        <User onClick={() => navigate(`/profile/${user?.username}`)} className="w-6 h-6 text-gray-400" />
       </nav>
+
+      <footer className="max-w-2xl mx-auto p-8 text-center">
+        <Link to="/terms" className="text-xs text-gray-600 hover:text-blue-400 transition-colors">
+          Terms of Service & Privacy Policy
+        </Link>
+      </footer>
+
+      <CreatePostModal 
+        isOpen={isCreatePostOpen}
+        onClose={() => setIsCreatePostOpen(false)}
+        onPostCreated={fetchPosts}
+        userId={user?.id}
+      />
 
       <ReportModal 
         isOpen={!!reportTarget} 

@@ -17,6 +17,7 @@ import {
 import { supabase } from '../lib/supabase';
 import { Button } from '../components/ui/Button';
 import { ReportModal } from '../components/ReportModal';
+import { ProfileSettingsModal } from '../components/ProfileSettingsModal';
 import { toast } from 'react-hot-toast';
 
 export default function ProfilePage() {
@@ -27,6 +28,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [isOwnProfile, setIsOwnProfile] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   useEffect(() => {
     fetchProfile();
@@ -90,7 +92,10 @@ export default function ProfilePage() {
               <AlertCircle className="w-6 h-6" />
             </button>
           )}
-          <button className="p-3 glass rounded-full hover:bg-white/10 transition-all">
+          <button 
+            onClick={() => setIsSettingsOpen(true)}
+            className="p-3 glass rounded-full hover:bg-white/10 transition-all"
+          >
             <Settings className="w-6 h-6" />
           </button>
           {isOwnProfile && (
@@ -204,6 +209,13 @@ export default function ProfilePage() {
         onClose={() => setIsReportModalOpen(false)}
         targetId={profile?.id || ''}
         targetType="profile"
+      />
+
+      <ProfileSettingsModal 
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        profile={profile}
+        onProfileUpdated={fetchProfile}
       />
     </div>
   );

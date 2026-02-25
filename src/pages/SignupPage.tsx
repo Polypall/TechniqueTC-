@@ -71,8 +71,26 @@ export default function SignupPage() {
       return;
     }
 
+    if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
+      toast.error('Username can only contain letters, numbers, and underscores');
+      return;
+    }
+
     setLoading(true);
     try {
+      // 0. Check if username is taken
+      const { data: existingUser } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('username', formData.username)
+        .single();
+
+      if (existingUser) {
+        toast.error('This username is already taken. Please choose another.');
+        setLoading(false);
+        return;
+      }
+
       // 1. Auth Signup
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
@@ -98,8 +116,8 @@ export default function SignupPage() {
           resumeUrl = await uploadResume(authData.user.id, formData.resumeFile);
         }
 
-        // 2. Create Profile
-        const { error: profileError } = await supabase.from('profiles').insert({
+        // 2. Create or Update Profile (Upsert handles the "Double Save" from the trigger)
+        const { error: profileError } = await supabase.from('profiles').upsert({
           id: authData.user.id,
           email: formData.email,
           username: formData.username,
@@ -109,8 +127,9 @@ export default function SignupPage() {
           professions: formData.specialties,
           avatar_url: avatarUrl,
           resume_url: resumeUrl,
-          is_active: true
-        });
+          is_active: true,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'id' });
 
         if (profileError) throw profileError;
       }

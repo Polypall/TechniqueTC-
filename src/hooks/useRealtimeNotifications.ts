@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { toast } from 'react-hot-toast';
 
